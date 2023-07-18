@@ -48,6 +48,50 @@ class Salesforce extends AbstractProvider
     }
 
     /**
+     * Get logout URL
+     *
+     * @return string
+     */
+    public function getLogoutUrl(array $params)
+    {
+        //https://testlogin.messe-muenchen.de/users/apex/IdentityLogout?retUrl=[gewünschteRedirectURLfürUser]
+        $postfix = '';
+        if (isset($params['redirect_uri']) && filter_var($params['redirect_uri'], FILTER_VALIDATE_URL)) {
+            $postfix = sprintf('?retUrl=%s', urlencode($params['redirect_uri']));
+        }
+        return $this->domain . '/apex/IdentityLogout' . $postfix;
+    }
+
+    /**
+     * @param array $params
+     * @return string
+     */
+    public function getPreAuthUrl(array $params)
+    {
+        $postfix = '';
+        foreach ($params as $key => $value) {
+            if (($key === 'redirect_uri' || $key === 'cookie_redirect_uri') && !filter_var($value, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+            if ($key === 'redirect_uri') {
+                $postfix .= sprintf('retUrl=%s&', urlencode($value));
+            }
+            if ($key === 'cookie_redirect_uri') {
+                $postfix .= sprintf('cRetUrl=%s&', urlencode($value));
+            }
+            if ($key === 'locale') {
+                $postfix .= sprintf('locale=%s&', $value);
+            }
+        }
+
+        if (!empty($postfix)) {
+            $postfix = rtrim($postfix, '& ');
+            $postfix = '?' . $postfix;
+        }
+        return $this->domain . '/IdentityCookie' . $postfix;
+    }
+
+    /**
      * Get provider url to fetch user details
      *
      * @param  AccessToken $token
